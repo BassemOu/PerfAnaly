@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lumina � Faculty Performance Intelligence � Khalifa University</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0A1E3C;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 24px; color: #0d1f3c;
+  }
+  .deck { width: 100%; max-width: 960px; }
+  .slide {
+    display: none; background: #ffffff; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.5); min-height: 560px; flex-direction: column;
+  }
+  .slide.active { display: flex; }
+  .slide-header {
+    padding: 28px 48px 20px; display: flex; align-items: flex-start;
+    justify-content: space-between; border-bottom: 1.5px solid #f3f4f6;
+  }
+  .slide-number { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #1464C8; margin-bottom: 6px; }
+  .slide-header h1 { font-size: 27px; font-weight: 800; line-height: 1.2; color: #0d1f3c; max-width: 620px; }
+  .ku-logo { flex-shrink: 0; height: 52px; width: 52px; }
+  .slide-body { flex: 1; padding: 20px 48px 32px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .card { border: 1.5px solid #BDD6EF; border-radius: 14px; padding: 18px; background: #f9fafb; }
+  .card .icon { font-size: 22px; margin-bottom: 10px; }
+  .card h3 { font-size: 13.5px; font-weight: 700; color: #0d1f3c; margin-bottom: 5px; }
+  .card p { font-size: 12px; color: #6b7280; line-height: 1.55; }
+  .bar-row { display: flex; align-items: center; gap: 14px; margin-bottom: 13px; }
+  .bar-label { width: 120px; flex-shrink: 0; font-size: 12.5px; font-weight: 600; color: #374151; }
+  .bar-track { flex: 1; height: 26px; background: #f3f4f6; border-radius: 7px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 7px; display: flex; align-items: center; justify-content: flex-end; padding-right: 9px; font-size: 11.5px; font-weight: 700; color: white; }
+  .bar-weight { width: 60px; text-align: right; font-size: 12.5px; font-weight: 700; }
+  .formula-eq { background: linear-gradient(135deg,#EEF6FF,#D4E9F7); border: 1.5px solid #9DC3E6; border-radius: 12px; padding: 14px 22px; margin: 16px 0 12px; font-size: 14px; font-weight: 600; color: #1464C8; text-align: center; }
+  .workflow { display: flex; flex-direction: column; gap: 10px; }
+  .wf-step { display: flex; align-items: flex-start; gap: 14px; background: #f9fafb; border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 13px 16px; }
+  .wf-num { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0; color: white; background: linear-gradient(135deg,#0D4FA0,#1464C8); }
+  .wf-body { flex: 1; }
+  .wf-body h4 { font-size: 12.5px; font-weight: 700; color: #0d1f3c; margin-bottom: 2px; }
+  .wf-body p { font-size: 11.5px; color: #6b7280; line-height: 1.5; }
+  .risk-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .risk-table th { background: #f3f4f6; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; padding: 9px 13px; text-align: left; color: #374151; }
+  .risk-table td { padding: 9px 13px; border-top: 1px solid #f3f4f6; color: #374151; }
+  .badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 100px; text-transform: uppercase; }
+  .pill-list { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+  .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 4px 11px; border-radius: 100px; border: 1.5px solid; }
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .kpi { text-align: center; background: #f9fafb; border: 1.5px solid #BDD6EF; border-radius: 12px; padding: 16px 10px; }
+  .kpi .num { font-size: 28px; font-weight: 800; color: #1464C8; }
+  .kpi .lbl { font-size: 11px; color: #6b7280; margin-top: 3px; }
+  /* Architecture diagram */
+  .arch { display: flex; flex-direction: column; gap: 6px; }
+  .arch-layer { border-radius: 12px; padding: 10px 14px; border: 1.5px solid; }
+  .arch-layer-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 7px; }
+  .arch-boxes { display: flex; gap: 8px; flex-wrap: wrap; }
+  .arch-box { border-radius: 8px; padding: 7px 12px; font-size: 11.5px; font-weight: 600; border: 1.5px solid; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .arch-arrow { text-align: center; color: #6CB4E4; font-size: 16px; line-height: 1; margin: 1px 0; }
+  /* Tech pills */
+  .footnote { text-align: center; font-size: 11.5px; color: #9ca3af; margin-top: 14px; border-top: 1px solid #f3f4f6; padding-top: 12px; }
+  .nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 20px; }
+  .nav button { background: #1464C8; color: white; border: none; border-radius: 100px; padding: 10px 28px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.1s; }
+  .nav button:hover { background: #1769CE; transform: scale(1.04); }
+  .nav button:disabled { opacity: 0.3; cursor: default; transform: none; }
+  .dots { display: flex; gap: 6px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.3); cursor: pointer; transition: background 0.2s, transform 0.2s; }
+  .dot.active { background: #4B8FCC; transform: scale(1.4); }
+  .slide-counter { color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 500; min-width: 50px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="deck">
+
+<!-- SLIDE 1 � Product Overview -->
+<div class="slide active" id="slide-1">
+  <div class="slide-header">
+    <div>
+      <div class="slide-number">Slide 1 of 8 � Introduction</div>
+      <h1>Lumina - AI-Powered Faculty Performance Appraisal System</h1>
+    </div>
+    <img src="/Khalifa-University-Logo.png" alt="Khalifa University" class="ku-logo">
+  </div>
+  <div class="slide-body">
+    <div class="kpi-row">
+      <div class="kpi"><div class="num">6</div><div class="lbl">Approval Roles</div></div>
+      <div class="kpi"><div class="num">3</div><div class="lbl">Score Dimensions</div></div>
+      <div class="kpi"><div class="num">4</div><div class="lbl">Risk Levels</div></div>
+      <div class="kpi"><div class="num">100%</div><div class="lbl">Auditable Decisions</div></div>
+    </div>
+    <div class="grid-3">
+      <div class="card"><h3>AI Appraisal Advisor</h3><p>GPT-4o analyses teaching, research and service performance data and delivers a ranked insight report with confidence scoring and evidence-backed reasoning.</p></div>
+      <div class="card"><h3>Composite Scoring</h3><p>Weighted 0-100 score across three pillars with cycle-over-cycle trend tracking and automatic risk stratification (Low -> Critical).</p></div>
+      <div class="card"><h3>6-Stage Workflow</h3><p>Faculty -> Chair -> Dean -> Committee -> Provost -> HR. Role-based access ensures each actor sees only their relevant appraisal actions and data.</p></div>
+      <div class="card"><h3>Risk Stratification</h3><p>LOW / MEDIUM / HIGH / CRITICAL risk tags assigned automatically from score thresholds, trend direction, and benchmark violations.</p></div>
+      <div class="card"><h3>Full Audit Trail</h3><p>Every appraisal action - AI analysis, Provost decision, HR processing - is timestamped and actor-attributed for accreditation-ready compliance reporting.</p></div>
+      <div class="card"><h3>Promotion Readiness</h3><p>Secondary AI score (0-100%) shows how close each faculty member is to meeting promotion-eligibility benchmarks alongside the appraisal outcome.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2 � Scoring Formula -->
+<div class="slide" id="slide-2">
+  <div class="slide-header">
+    <div>
+      <div class="slide-number">Slide 2 of 8 � Scoring Model</div>
+      <h1>Composite Performance Score - Formula &amp; Weighting</h1>
+    </div>
+    <img src="/Khalifa-University-Logo.png" alt="Khalifa University" class="ku-logo">
+  </div>
+  <div class="slide-body">
+    <div class="bar-row">
+      <div class="bar-label" style="color:#4f46e5;">Teaching (T)</div>
+      <div class="bar-track"><div class="bar-fill" style="width:40%;background:linear-gradient(90deg,#6366f1,#4f46e5);">40 pts</div></div>
+      <div class="bar-weight" style="color:#4f46e5;">� 0.40</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label" style="color:#059669;">Research (R)</div>
+      <div class="bar-track"><div class="bar-fill" style="width:40%;background:linear-gradient(90deg,#10b981,#059669);">40 pts</div></div>
+      <div class="bar-weight" style="color:#059669;">� 0.40</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label" style="color:#d97706;">Service (S)</div>
+      <div class="bar-track"><div class="bar-fill" style="width:20%;background:linear-gradient(90deg,#f59e0b,#d97706);">20 pts</div></div>
+      <div class="bar-weight" style="color:#d97706;">� 0.20</div>
+    </div>
+    <div class="formula-eq">Overall Score = (T � 0.40) + (R � 0.40) + (S � 0.20) &nbsp;?&nbsp; [0, 100]</div>
+    <div class="grid-3">
+      <div class="card" style="border-color:#c7d2fe;background:#eef2ff;"><h3 style="color:#4f46e5;">?? Teaching Inputs</h3><p>Student evaluation avg (5.0 scale) � Teaching load fulfilment � Syllabus review rating � Peer observation score</p></div>
+      <div class="card" style="border-color:#bbf7d0;background:#f0fdf4;"><h3 style="color:#059669;">?? Research Inputs</h3><p>Peer-reviewed publications � External grants (count &amp; value) � Citation / h-index trend � Graduate student mentorship</p></div>
+      <div class="card" style="border-color:#fde68a;background:#fffbeb;"><h3 style="color:#d97706;">?? Service Inputs</h3><p>Departmental committee roles � University-level initiatives � Professional society involvement � Community engagement</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3 � Teaching Deep-Dive -->
+<div class="slide" id="slide-3">
+  <div class="slide-header">
+    <div>
+      <div class="slide-number">Slide 3 of 8 � Dimension Deep-Dive</div>
+      <h1>Teaching Performance - Metrics, Benchmarks &amp; Scoring</h1>
+    </div>
+    <img src="/Khalifa-University-Logo.png" alt="Khalifa University" class="ku-logo">
+  </div>
+  <div class="slide-body">
+    <div class="grid-2" style="margin-bottom:14px;">
+      <table class="risk-table">
+        <thead><tr><th>Metric</th><th>Weight</th><th>Benchmark</th></tr></thead>
+        <tbody>
+          <tr><td>Student Evaluation (5.0 scale)</td><td>40%</td><td>= 4.0</td></tr>
+          <tr><td>Teaching Load Fulfilment</td><td>25%</td><td>100%</td></tr>
+          <tr><td>Peer Observation Score</td><td>20%</td><td>= 3.5 / 5.0</td></tr>
+          <tr><td>Curriculum &amp; Syllabus Review</td><td>15%</td><td>Annual update</td></tr>
+        </tbody>
+      </table>
+      <div class="card" style="border-color:#c7d2fe;background:#eef2ff;">
+        <h3 style="color:#4f46e5;margin-bottom:10px;">Score Interpretation</h3>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <div style="display:flex;align-items:center;gap:10px;"><span class="badge" style="background:#dcfce7;color:#166534;">90-100</span><span style="font-size:12px;color:#374151;">Exceptional educator. Strongly recommend recognition.</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span class="badge" style="background:#fef9c3;color:#854d0e;">75-89</span><span style="font-size:12px;color:#374151;">Meets expectations. Minor improvements suggested.</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span class="badge" style="background:#ffedd5;color:#c2410c;">60-74</span><span style="font-size:12px;color:#374151;">Below average. Targeted coaching required.</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span class="badge" style="background:#fee2e2;color:#991b1b;">&lt; 60</span><span style="font-size:12px;color:#374151;">Critical. Immediate intervention and PIP required.</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="border-color:#c7d2fe;background:#f5f3ff;">
+      <h3 style="color:#4f46e5;margin-bottom:7px;">?? How AI Uses Teaching Data</h3>
+      <p style="font-size:12px;">The AI weighs the 3-cycle trend more heavily than any single score. A faculty member rising from 3.2 to 3.8 over three years is rated more favourably than one with a static 4.0. Bonus signals: active learning techniques, high-enrolment management, graduate thesis supervision quality.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4 � Research Deep-Dive -->
+<div class="slide" id="slide-4">
+  <div class="slide-header">
+    <div>
+      <div class="slide-number">Slide 4 of 8 � Dimension Deep-Dive</div>
+      <h1>Research Performance - Metrics, Benchmarks &amp; Scoring</h1>
+    </div>
+    <img src="/Khalifa-University-Logo.png" alt="Khalifa University" class="ku-logo">
+  </div>
+  <div class="slide-body">
+    <div class="grid-2" style="margin-bottom:14px;">
+      <table class="risk-table">
+        <thead><tr><th>Metric</th><th>Weight</th><th>Benchmark / yr</th></tr></thead>
+        <tbody>
+          <tr><td>Peer-reviewed publications</td><td>35%</td><td>= 2 (Asst) / = 3 (Assoc+)</td></tr>
+          <tr><td>External grants secured</td><td>30%</td><td>= 1 active grant</td></tr>
+          <tr><td>Citations &amp; h-index trend</td><td>20%</td><td>Positive trend</td></tr>
+          <tr><td>Graduate mentorship</td><td>15%</td><td>= 1 graduate advisee</td></tr>
+        </tbody>
+      </table>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="card" style="border-color:#bbf7d0;background:#f0fdf4;"><h3 style="color:#059669;">Publication Quality Tiers</h3><p>Q1/Q2 journals = 1 full credit | Conference (A*) = 0.8 | Book chapter = 0.5 | Preprints excluded until accepted</p></div>
+        <div class="card" style="border-color:#bbf7d0;background:#f0fdf4;"><h3 style="color:#059669;">Grant Point System</h3><p>National competitive = 3 pts | Industry partnership = 2 pts | Internal = 1 pt | International = 4 pts</p></div>
+      </div>
+    </div>
+    <div class="card" style="border-color:#bbf7d0;background:#f0fff4;">
+      <h3 style="color:#059669;margin-bottom:7px;">?? How AI Uses Research Data</h3>
+      <p style="font-size:12px;">The AI normalises output by rank and career stage. A 3rd-year Assistant Professor with 1 Q1 publication and 1 grant scores higher than a 10-year Associate Professor with the same output. A zero-grant streak exceeding 3 consecutive years is automatically penalised regardless of publication volume.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5 � Service Deep-Dive -->
+<div class="slide" id="slide-5">
+  <div class="slide-header">
+    <div>
+      <div class="slide-number">Slide 5 of 8 � Dimension Deep-Dive</div>
+      <h1>Service Performance - Metrics, Benchmarks &amp; Scoring</h1>
+    </div>
+    <img src="/Khalifa-University-Logo.png" alt="Khalifa University" class="ku-logo">
+  </div>
+  <div class="slide-body">
+    <div class="grid-2" style="margin-bottom:14px;">
+      <table class="risk-table">
+        <thead><tr><th>Service Category</th><th>Weight</th><th>Min. Expected</th></tr></thead>
+        <tbody>
+          <tr><td>Departmental committees</td><td>35%</td><td>= 1 active role</td></tr>
+          <tr><td>University-level service</td><td>30%</td><td>= 1 role after Year 3</td></tr>
+          <tr><td>Professional society</td><td>20%</td><td>Active membership</td></tr>
+          <tr><td>Community / outreach</td><td>15%</td><td>Documented annually</td></tr>
+        </tbody>
+      </table>
+      <div class="card" style="border-color:#fde68a;background:#fffbeb;">
+        <h3 style="color:#d97706;margin-bottom:9px;">Service Point Table</h3>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:#374151;">
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid #fde68a;padding-bottom:4px;"><span>Committee Chair (Dept)</span><strong>+8</strong></div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid #fde68a;padding-bottom:4px;"><span>Committee Member</span><strong>+5</strong></div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid #fde68a;padding-bottom:4px;"><span>University Senate / Standing</span><strong>+10</strong></div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid #fde68a;padding-bottom:4px;"><span>Conference Chair (external)</span><strong>+7</strong></div>
+          <div style="display:flex;justify-content:space-between;"><span>Community Outreach (documented)</span><strong>+4</strong></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="border-color:#fde68a;background:#fefce8;">
+      <h3 style="color:#d97706;margin-bottom:7px;">?? How AI Uses Service Data</h3>
+      <p style="font-size:12px;">Service is capped at a 20-point contribution to the composite score. The AI flags over-service (service = 90, research &lt; 60) as an imbalance risk - it may indicate the faculty member is under-investing in research. The pattern is explicitly noted in the AI appraisal summary.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6 � Workflow -->
+<div class="slide" id="slide-6">
+  <div class="slide-header">
+    <div>
+      <div class="slide-number">Slide 6 of 8 � Process Flow</div>
+      <h1>Six-Stage Appraisal Workflow</h1>
+    </div>
+    <img src="/Khalifa-University-Logo.png" alt="Khalifa University" class="ku-logo">
+  </div>
+  <div class="slide-body">
+    <div class="workflow">
+      <div class="wf-step"><div class="wf-num">1</div><div class="wf-body"><h4>Faculty - Self-Assessment Submission</h4><p>Faculty completes annual self-assessment: uploads publications, grants, teaching materials, and service log. System auto-populates student evaluation scores from the LMS integration.</p></div></div>
+      <div class="wf-step"><div class="wf-num">2</div><div class="wf-body"><h4>Department Chair - First Review &amp; Scoring</h4><p>Chair reviews the submission, adds peer observation score, assigns preliminary dimension ratings, and forwards to the Dean with written comments.</p></div></div>
+      <div class="wf-step"><div class="wf-num">3</div><div class="wf-body"><h4>Division Dean - Divisional Endorsement</h4><p>Dean reviews Chair scores against divisional benchmarks, can adjust ratings with justification, and endorses or returns the appraisal for re-evaluation.</p></div></div>
+      <div class="wf-step"><div class="wf-num">4</div><div class="wf-body"><h4>Review Committee - Independent Validation</h4><p>Cross-disciplinary committee validates scoring consistency, checks for bias, and locks the official composite score used as input for the AI analysis.</p></div></div>
+      <div class="wf-step"><div class="wf-num">5</div><div class="wf-body"><h4>Provost - AI-Assisted Appraisal Decision</h4><p>Provost reviews the AI performance analysis, confidence scores, strengths and concerns, and records the official appraisal outcome in the system.</p></div></div>
+      <div class="wf-step"><div class="wf-num">6</div><div class="wf-body"><h4>HR - Outcome Processing &amp; Notification</h4><p>HR receives the Provost's appraisal decision, prepares any required documentation, notifies the faculty member, and archives the full appraisal record.</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7 � Risk Stratification -->
+<div class="slide" id="slide-7">
+  <div class="slide-header">
+    <div>
+      <div class="slide-number">Slide 7 of 8 � Risk Engine</div>
+      <h1>Automatic Risk Stratification - How Faculty Are Flagged</h1>
+    </div>
+    <img src="/Khalifa-University-Logo.png" alt="Khalifa University" class="ku-logo">
+  </div>
+  <div class="slide-body">
+    <table class="risk-table" style="margin-bottom:14px;">
+      <thead><tr><th>Risk Level</th><th>Score Range</th><th>Trigger Conditions</th><th>System Action</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge" style="background:#dcfce7;color:#166534;">LOW</span></td><td>= 80</td><td>All dimensions = 70. Trend stable or improving.</td><td>Standard appraisal processing.</td></tr>
+        <tr><td><span class="badge" style="background:#fef9c3;color:#854d0e;">MEDIUM</span></td><td>65-79</td><td>One dimension below benchmark OR score declined &gt;5 pts.</td><td>AI flags for Provost attention. Improvement plan recommended.</td></tr>
+        <tr><td><span class="badge" style="background:#ffedd5;color:#c2410c;">HIGH</span></td><td>55-64</td><td>Two+ dimensions below benchmark OR persistent 2-cycle decline.</td><td>Priority review queue. Committee notified automatically.</td></tr>
+        <tr><td><span class="badge" style="background:#fee2e2;color:#991b1b;">CRITICAL</span></td><td>&lt; 55</td><td>Overall &lt;55 OR failed PIP OR score declined &gt;15 pts in one cycle.</td><td>Auto-escalate to Provost for urgent intervention.</td></tr>
+      </tbody>
+    </table>
+    <div class="grid-2">
+      <div class="card" style="border-color:#fca5a5;background:#fff1f2;"><h3 style="color:#b91c1c;">Critical Escalation Triggers</h3><p>Any single criterion instantly elevates to CRITICAL: student evaluation &lt; 2.5/5.0, zero publications in 3 consecutive years, confirmed academic misconduct, or two consecutive failed PIPs.</p></div>
+      <div class="card" style="border-color:#bbf7d0;background:#f0fdf4;"><h3 style="color:#059669;">Risk Downgrade Path</h3><p>A faculty member can reduce their risk level by 1 tier per evaluation cycle by meeting all PIP targets and demonstrating measurable upward trend across all three dimensions.</p></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- SLIDE 8 � Features & End-User Value -->
+<div class="slide" id="slide-8">
+  <div class="slide-header">
+    <div>
+      <div class="slide-number">Slide 8 of 8 � Features &amp; User Value</div>
+      <h1>How Lumina Serves the Provost's Office</h1>
+    </div>
+    <img src="/Khalifa-University-Logo.png" alt="Khalifa University" class="ku-logo">
+  </div>
+  <div class="slide-body" style="padding-top:16px;">
+
+    <!-- Context banner -->
+    <div style="background:linear-gradient(135deg,#EEF6FF,#D4E9F7);border:1.5px solid #9DC3E6;border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <div>
+        <p style="font-size:13px;font-weight:800;color:#1464C8;">Primary End User - Provost's Office</p>
+        <p style="font-size:11.5px;color:#1769CE;">The Provost is the decision authority: Lumina consolidates scored appraisals from all stages and delivers AI-powered insights so the Provost can make evidence-based, institution-wide faculty decisions.</p>
+      </div>
+    </div>
+
+    <!-- Feature boxes 2�3 grid -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+
+      <div style="border:2px solid #9DC3E6;border-radius:14px;padding:16px;background:#F0F7FF;">
+        <h3 style="font-size:13px;font-weight:800;color:#0d1f3c;margin-bottom:5px;">Institution-Wide Appraisal Dashboard</h3>
+        <p style="font-size:11.5px;color:#6b7280;line-height:1.55;">The Provost sees every faculty member's composite score, risk level, and multi-cycle trend across all departments in a single consolidated view - no manual report collation required.</p>
+      </div>
+
+      <div style="border:2px solid #9DC3E6;border-radius:14px;padding:16px;background:#F0F7FF;">
+        <h3 style="font-size:13px;font-weight:800;color:#0d1f3c;margin-bottom:5px;">AI Performance Analysis</h3>
+        <p style="font-size:11.5px;color:#6b7280;line-height:1.55;">GPT-4o generates a ranked insight report per faculty member covering strengths, concerns, trajectory and confidence scoring - giving the Provost objective, evidence-backed input before recording a decision.</p>
+      </div>
+
+      <div style="border:2px solid #9DC3E6;border-radius:14px;padding:16px;background:#F0F7FF;">
+        <h3 style="font-size:13px;font-weight:800;color:#0d1f3c;margin-bottom:5px;">Risk Prioritisation Queue</h3>
+        <p style="font-size:11.5px;color:#6b7280;line-height:1.55;">HIGH and CRITICAL faculty are automatically surfaced at the top of the Provost's queue. Each flag includes the specific trigger condition so interventions are targeted and timely.</p>
+      </div>
+
+      <div style="border:2px solid #9DC3E6;border-radius:14px;padding:16px;background:#F0F7FF;">
+        <h3 style="font-size:13px;font-weight:800;color:#0d1f3c;margin-bottom:5px;">Formal Decision Recording</h3>
+        <p style="font-size:11.5px;color:#6b7280;line-height:1.55;">The Provost records the official appraisal outcome with written rationale directly in the system. The decision is immediately routed to HR and appended to the permanent, auditable faculty record.</p>
+      </div>
+
+      <div style="border:2px solid #9DC3E6;border-radius:14px;padding:16px;background:#F0F7FF;">
+        <h3 style="font-size:13px;font-weight:800;color:#0d1f3c;margin-bottom:5px;">Cross-Cycle Trend Tracking</h3>
+        <p style="font-size:11.5px;color:#6b7280;line-height:1.55;">Lumina plots score trajectories over multiple appraisal cycles. The Provost can identify sustained underperformance patterns or faculty showing consistent improvement before making a final determination.</p>
+      </div>
+
+      <div style="border:2px solid #9DC3E6;border-radius:14px;padding:16px;background:#F0F7FF;">
+        <h3 style="font-size:13px;font-weight:800;color:#0d1f3c;margin-bottom:5px;">Full Audit and Compliance Trail</h3>
+        <p style="font-size:11.5px;color:#6b7280;line-height:1.55;">Every action from faculty submission through Chair, Dean, Committee and Provost is timestamped and actor-attributed. The complete record is exportable for accreditation and governance reporting.</p>
+      </div>
+
+    </div>
+
+    <div style="text-align:center;font-size:11px;color:#9ca3af;margin-top:13px;border-top:1px solid #f3f4f6;padding-top:10px;">
+      Lumina gives the Provost's Office a single, authoritative platform to review, decide and archive faculty appraisals across the entire institution.
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<div class="nav">
+  <button id="prev" onclick="changeSlide(-1)" disabled>? Back</button>
+  <div class="dots" id="dots"></div>
+  <span class="slide-counter" id="counter">1 / 8</span>
+  <button id="next" onclick="changeSlide(1)">Next ?</button>
+</div>
+
+<script>
+  const TOTAL = 8;
+  let cur = 0;
+  const slides = document.querySelectorAll('.slide');
+  const dotsEl = document.getElementById('dots');
+  const counter = document.getElementById('counter');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  for (let i = 0; i < TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotsEl.appendChild(d);
+  }
+  function goTo(n) {
+    slides[cur].classList.remove('active');
+    dotsEl.children[cur].classList.remove('active');
+    cur = n;
+    slides[cur].classList.add('active');
+    dotsEl.children[cur].classList.add('active');
+    counter.textContent = (cur+1) + ' / ' + TOTAL;
+    prevBtn.disabled = cur === 0;
+    nextBtn.disabled = cur === TOTAL - 1;
+  }
+  function changeSlide(dir) { const n = cur+dir; if(n>=0&&n<TOTAL) goTo(n); }
+  document.addEventListener('keydown', e => {
+    if (e.key==='ArrowRight') changeSlide(1);
+    if (e.key==='ArrowLeft') changeSlide(-1);
+  });
+</script>
+</body>
+</html>

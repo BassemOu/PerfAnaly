@@ -1,0 +1,836 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  FACULTY
+  DEPARTMENT_CHAIR
+  DIVISION_DEAN
+  HR_ADMIN
+  REVIEW_COMMITTEE
+  PROVOST
+}
+
+enum AcademicRank {
+  INSTRUCTOR
+  ASSISTANT_PROFESSOR
+  ASSOCIATE_PROFESSOR
+  PROFESSOR
+  DISTINGUISHED_PROFESSOR
+  LECTURER
+  SENIOR_LECTURER
+  ADJUNCT
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  ADJUNCT
+  VISITING
+  CONTRACT
+}
+
+enum AppraisalStatus {
+  DRAFT
+  SELF_ASSESSMENT_PENDING
+  SELF_ASSESSMENT_SUBMITTED
+  CHAIR_REVIEW_PENDING
+  CHAIR_REVIEW_SUBMITTED
+  DEAN_REVIEW_PENDING
+  DEAN_REVIEW_SUBMITTED
+  COMMITTEE_REVIEW_PENDING
+  COMMITTEE_REVIEW_SUBMITTED
+  PROVOST_REVIEW_PENDING
+  PROVOST_REVIEW_SUBMITTED
+  HR_FINAL_REVIEW
+  COMPLETED
+  REVISION_REQUESTED
+}
+
+enum AppraisalPeriod {
+  ANNUAL
+  SEMESTER_FALL
+  SEMESTER_SPRING
+  SEMESTER_SUMMER
+  MID_YEAR
+}
+
+enum ContractStatus {
+  ACTIVE
+  EXPIRED
+  PENDING_RENEWAL
+  RENEWED
+  TERMINATED
+  ON_HOLD
+  DEFERRED
+}
+
+enum RenewalRecommendation {
+  RENEW
+  RENEW_WITH_CONDITIONS
+  DEFER
+  DO_NOT_RENEW
+}
+
+enum PromotionStatus {
+  NOT_ELIGIBLE
+  ELIGIBLE
+  IN_REVIEW
+  APPROVED
+  DENIED
+  WITHDRAWN
+}
+
+enum WorkflowActionType {
+  SUBMIT
+  APPROVE
+  REJECT
+  REQUEST_REVISION
+  REASSIGN
+  ESCALATE
+  COMMENT
+  FINAL_DECISION
+}
+
+enum DocumentType {
+  PUBLICATION
+  GRANT
+  STUDENT_FEEDBACK
+  COMMITTEE_CERTIFICATE
+  CERTIFICATION
+  AWARD
+  CONFERENCE_PAPER
+  COURSE_MATERIAL
+  COMMUNITY_SERVICE
+  OTHER
+}
+
+enum NotificationStatus {
+  UNREAD
+  READ
+  DISMISSED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum PerformanceRating {
+  EXCEEDS_EXPECTATIONS
+  MEETS_EXPECTATIONS
+  DOES_NOT_MEET_EXPECTATIONS
+}
+
+enum ReviewStatus {
+  DRAFT
+  FACULTY_SUBMITTED
+  CHAIR_REVIEW
+  DEAN_APPROVED
+  MANAGER_PENDING
+  HR_COMPLETED
+  COMPLETED
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// USER & AUTHENTICATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  role          UserRole
+  isActive      Boolean   @default(true)
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  facultyProfile     FacultyProfile?
+  reviewsAsChair     Appraisal[]         @relation("ChairReviewer")
+  reviewsAsDean      Appraisal[]         @relation("DeanReviewer")
+  reviewsAsProvost   Appraisal[]         @relation("ProvostReviewer")
+  workflowActions    WorkflowAction[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+  comments           ReviewComment[]
+  sessions           UserSession[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model UserSession {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INSTITUTIONAL STRUCTURE
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Institution {
+  id          String   @id @default(cuid())
+  name        String
+  shortName   String?
+  logoUrl     String?
+  website     String?
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  divisions   Division[]
+  policies    InstitutionalPolicy[]
+}
+
+model Division {
+  id            String   @id @default(cuid())
+  institutionId String
+  name          String
+  code          String   @unique
+  description   String?
+  deanId        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  institution  Institution     @relation(fields: [institutionId], references: [id])
+  departments  Department[]
+  faculty      FacultyProfile[]
+
+  @@index([institutionId])
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  divisionId  String
+  name        String
+  code        String   @unique
+  description String?
+  chairId     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  division  Division         @relation(fields: [divisionId], references: [id])
+  faculty   FacultyProfile[]
+
+  @@index([divisionId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FACULTY PROFILE
+// ─────────────────────────────────────────────────────────────────────────────
+
+model FacultyProfile {
+  id               String         @id @default(cuid())
+  userId           String         @unique
+  employeeId       String         @unique
+  firstName        String
+  lastName         String
+  middleName       String?
+  title            String?
+  rank             AcademicRank
+  departmentId     String
+  divisionId       String
+  specialization   String[]
+  employmentType   EmploymentType
+  hireDate         DateTime
+  tenureDate       DateTime?
+  bio              String?
+  officeLocation   String?
+  phone            String?
+  profileImageUrl  String?
+  orcidId          String?
+  linkedinUrl      String?
+  googleScholarUrl String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  user             User             @relation(fields: [userId], references: [id])
+  department       Department       @relation(fields: [departmentId], references: [id])
+  division         Division         @relation(fields: [divisionId], references: [id])
+  contracts        Contract[]
+  appraisals       Appraisal[]
+  publications     Publication[]
+  teachingRecords  TeachingRecord[]
+  serviceRecords   ServiceRecord[]
+  researchRecords  ResearchRecord[]
+  documents        EvidenceDocument[]
+  promotionRecords PromotionRecord[]
+  performanceReviews PerformanceReview[]
+
+  @@index([departmentId])
+  @@index([divisionId])
+  @@index([rank])
+  @@index([employmentType])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONTRACT MANAGEMENT
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Contract {
+  id                   String                @id @default(cuid())
+  facultyId            String
+  contractNumber       String                @unique
+  startDate            DateTime
+  endDate              DateTime
+  status               ContractStatus        @default(ACTIVE)
+  salary               Decimal?
+  position             String
+  terms                String?
+  notes                String?
+  renewalDueDate       DateTime?
+  recommendation       RenewalRecommendation?
+  renewalJustification String?
+  renewalConditions    String?
+  riskLevel            RiskLevel             @default(LOW)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  faculty         FacultyProfile     @relation(fields: [facultyId], references: [id])
+  appraisals      Appraisal[]
+  workflowActions WorkflowAction[]
+  documents       EvidenceDocument[]
+
+  @@index([facultyId])
+  @@index([status])
+  @@index([endDate])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// APPRAISAL RUBRIC & KPI CONFIGURATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AppraisalRubric {
+  id           String         @id @default(cuid())
+  name         String
+  description  String?
+  version      String         @default("1.0")
+  isActive     Boolean        @default(true)
+  applicableTo AcademicRank[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  categories AppraisalRubricCategory[]
+  appraisals Appraisal[]
+}
+
+model AppraisalRubricCategory {
+  id          String   @id @default(cuid())
+  rubricId    String
+  name        String
+  description String?
+  weight      Float
+  minScore    Float    @default(0)
+  maxScore    Float    @default(100)
+  order       Int
+  createdAt   DateTime @default(now())
+
+  rubric   AppraisalRubric  @relation(fields: [rubricId], references: [id], onDelete: Cascade)
+  kpis     KPIDefinition[]
+  scores   AppraisalScore[]
+
+  @@index([rubricId])
+}
+
+model KPIDefinition {
+  id              String   @id @default(cuid())
+  categoryId      String
+  name            String
+  description     String?
+  weight          Float
+  minScore        Float    @default(0)
+  maxScore        Float    @default(5)
+  evidenceRequired Boolean @default(false)
+  order           Int
+
+  category  AppraisalRubricCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  kpiScores KPIScore[]
+
+  @@index([categoryId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// APPRAISAL
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Appraisal {
+  id                      String          @id @default(cuid())
+  facultyId               String
+  rubricId                String
+  contractId              String?
+  period                  AppraisalPeriod
+  academicYear            String
+  semester                String?
+  status                  AppraisalStatus @default(DRAFT)
+  dueDate                 DateTime?
+  submittedAt             DateTime?
+  completedAt             DateTime?
+  chairReviewerId         String?
+  deanReviewerId          String?
+  provostReviewerId       String?
+  overallScore            Float?
+  weightedScore           Float?
+  selfAssessmentNarrative String?
+  chairNarrative          String?
+  deanNarrative           String?
+  committeeNarrative      String?
+  aiGeneratedSummary      String?
+  aiStrengths             String[]
+  aiRisks                 String[]
+  aiImprovements          String[]
+  aiConfidenceScore       Float?
+  needsHumanReview        Boolean         @default(true)
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+
+  faculty         FacultyProfile          @relation(fields: [facultyId], references: [id])
+  rubric          AppraisalRubric         @relation(fields: [rubricId], references: [id])
+  contract        Contract?               @relation(fields: [contractId], references: [id])
+  chairReviewer     User?                   @relation("ChairReviewer", fields: [chairReviewerId], references: [id])
+  deanReviewer      User?                   @relation("DeanReviewer", fields: [deanReviewerId], references: [id])
+  provostReviewer   User?                   @relation("ProvostReviewer", fields: [provostReviewerId], references: [id])
+  scores            AppraisalScore[]
+  kpiScores       KPIScore[]
+  documents       EvidenceDocument[]
+  workflowActions WorkflowAction[]
+  comments        ReviewComment[]
+
+  @@index([facultyId])
+  @@index([status])
+  @@index([academicYear])
+  @@index([period])
+}
+
+model AppraisalScore {
+  id               String   @id @default(cuid())
+  appraisalId      String
+  categoryId       String
+  selfScore        Float?
+  reviewerScore    Float?
+  finalScore       Float?
+  selfComments     String?
+  reviewerComments String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  appraisal Appraisal               @relation(fields: [appraisalId], references: [id], onDelete: Cascade)
+  category  AppraisalRubricCategory @relation(fields: [categoryId], references: [id])
+
+  @@unique([appraisalId, categoryId])
+}
+
+model KPIScore {
+  id            String   @id @default(cuid())
+  appraisalId   String
+  kpiId         String
+  selfScore     Float?
+  reviewerScore Float?
+  finalScore    Float?
+  selfEvidence  String?
+  reviewerNotes String?
+  createdAt     DateTime @default(now())
+
+  appraisal Appraisal     @relation(fields: [appraisalId], references: [id], onDelete: Cascade)
+  kpi       KPIDefinition @relation(fields: [kpiId], references: [id])
+
+  @@unique([appraisalId, kpiId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EVIDENCE & DOCUMENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model EvidenceDocument {
+  id          String       @id @default(cuid())
+  facultyId   String
+  appraisalId String?
+  contractId  String?
+  type        DocumentType
+  title       String
+  description String?
+  fileUrl     String
+  fileName    String
+  fileSize    Int
+  mimeType    String
+  uploadedAt  DateTime     @default(now())
+  verifiedBy  String?
+  verifiedAt  DateTime?
+  isPublic    Boolean      @default(false)
+
+  faculty   FacultyProfile @relation(fields: [facultyId], references: [id])
+  appraisal Appraisal?     @relation(fields: [appraisalId], references: [id])
+  contract  Contract?      @relation(fields: [contractId], references: [id])
+
+  @@index([facultyId])
+  @@index([appraisalId])
+  @@index([type])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACADEMIC RECORDS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Publication {
+  id              String   @id @default(cuid())
+  facultyId       String
+  title           String
+  journal         String?
+  publisher       String?
+  authors         String[]
+  year            Int
+  doi             String?
+  url             String?
+  citationCount   Int?
+  isIndexed       Boolean  @default(false)
+  indexedIn       String[]
+  publicationType String
+  createdAt       DateTime @default(now())
+
+  faculty FacultyProfile @relation(fields: [facultyId], references: [id])
+
+  @@index([facultyId])
+  @@index([year])
+}
+
+model TeachingRecord {
+  id              String   @id @default(cuid())
+  facultyId       String
+  courseCode      String
+  courseName      String
+  semester        String
+  academicYear    String
+  creditHours     Int
+  enrollmentCount Int
+  studentRating   Float?
+  peerRating      Float?
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  faculty FacultyProfile @relation(fields: [facultyId], references: [id])
+
+  @@index([facultyId])
+  @@index([academicYear])
+}
+
+model ServiceRecord {
+  id           String    @id @default(cuid())
+  facultyId    String
+  serviceType  String
+  role         String
+  organization String
+  startDate    DateTime
+  endDate      DateTime?
+  description  String?
+  academicYear String
+  createdAt    DateTime  @default(now())
+
+  faculty FacultyProfile @relation(fields: [facultyId], references: [id])
+
+  @@index([facultyId])
+}
+
+model ResearchRecord {
+  id           String    @id @default(cuid())
+  facultyId    String
+  projectTitle String
+  fundingSource String?
+  grantAmount  Decimal?
+  startDate    DateTime
+  endDate      DateTime?
+  status       String
+  role         String
+  description  String?
+  academicYear String
+  createdAt    DateTime  @default(now())
+
+  faculty FacultyProfile @relation(fields: [facultyId], references: [id])
+
+  @@index([facultyId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROMOTION & TENURE
+// ─────────────────────────────────────────────────────────────────────────────
+
+model PromotionRecord {
+  id               String          @id @default(cuid())
+  facultyId        String
+  currentRank      AcademicRank
+  targetRank       AcademicRank
+  status           PromotionStatus @default(NOT_ELIGIBLE)
+  applicationDate  DateTime?
+  decisionDate     DateTime?
+  decisionBy       String?
+  decisionNotes    String?
+  aiReadinessScore Float?
+  aiGapAnalysis    String?
+  aiActionPlan     String[]
+  requirements     Json?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  faculty FacultyProfile @relation(fields: [facultyId], references: [id])
+
+  @@index([facultyId])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WORKFLOW & APPROVALS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model WorkflowAction {
+  id             String             @id @default(cuid())
+  appraisalId    String?
+  contractId     String?
+  actionType     WorkflowActionType
+  performedBy    String
+  fromStatus     String?
+  toStatus       String?
+  comments       String?
+  isSystemAction Boolean            @default(false)
+  createdAt      DateTime           @default(now())
+
+  appraisal Appraisal? @relation(fields: [appraisalId], references: [id])
+  contract  Contract?  @relation(fields: [contractId], references: [id])
+  user      User       @relation(fields: [performedBy], references: [id])
+
+  @@index([appraisalId])
+  @@index([contractId])
+  @@index([performedBy])
+  @@index([createdAt])
+}
+
+model ReviewComment {
+  id          String    @id @default(cuid())
+  appraisalId String
+  userId      String
+  parentId    String?
+  content     String
+  isInternal  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  appraisal Appraisal      @relation(fields: [appraisalId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id])
+  parent    ReviewComment? @relation("CommentThread", fields: [parentId], references: [id])
+  replies   ReviewComment[] @relation("CommentThread")
+
+  @@index([appraisalId])
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String             @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String
+  status    NotificationStatus @default(UNREAD)
+  link      String?
+  metadata  Json?
+  expiresAt DateTime?
+  createdAt DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  entity    String
+  entityId  String
+  oldValues Json?
+  newValues Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INSTITUTIONAL POLICIES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model InstitutionalPolicy {
+  id            String    @id @default(cuid())
+  institutionId String
+  name          String
+  category      String
+  description   String?
+  rules         Json
+  version       String
+  isActive      Boolean   @default(true)
+  effectiveDate DateTime
+  expiryDate    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  institution Institution @relation(fields: [institutionId], references: [id])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AI EVALUATION LOGS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AIEvaluationLog {
+  id              String    @id @default(cuid())
+  appraisalId     String?
+  contractId      String?
+  facultyId       String?
+  promptType      String
+  promptTokens    Int?
+  responseTokens  Int?
+  model           String
+  output          Json
+  confidenceScore Float?
+  processingMs    Int?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  isAccepted      Boolean?
+  createdAt       DateTime  @default(now())
+
+  @@index([appraisalId])
+  @@index([facultyId])
+  @@index([promptType])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SIMPLIFIED PERFORMANCE REVIEW (matches Provost Office form)
+// Three areas: Teaching 40% | Research 40% (input from Research Office) | Service 20%
+// ─────────────────────────────────────────────────────────────────────────────
+
+model PerformanceReview {
+  id             String        @id @default(cuid())
+  requestNo      String        @unique  // e.g. FPRV25-20260224-1330
+  facultyId      String
+  reviewYear     Int                    // e.g. 2025
+  reviewDate     DateTime
+  submissionDate DateTime?
+  status         ReviewStatus  @default(DRAFT)
+  managerName    String?               // Chair name
+  managerEmpId   String?               // Chair ADERP employee ID
+
+  // ── Teaching & Advising (weight 40) ────────────────────────────────────
+  teachingWeight              Int     @default(40)
+  teachingGoal                String?
+  teachingTarget              String?
+  teachingOutcome             String?
+  teachingFacultyComment      String?
+  teachingChairComment        String?
+  teachingChairNarrative      String?
+  teachingRating              PerformanceRating?
+
+  // ── Scholarship / Research (weight 40) — score input from Research Office
+  scholarshipWeight           Int     @default(40)
+  scholarshipGoal             String?
+  scholarshipTarget           String?
+  scholarshipOutcome          String?
+  scholarshipFacultyComment   String?
+  scholarshipChairComment     String?
+  scholarshipChairNarrative   String?
+  scholarshipRating           PerformanceRating?
+  researchOfficeScore         Float?             // INPUT from Research Office (0–100)
+  researchOfficeNotes         String?
+
+  // ── Service (weight 20) ────────────────────────────────────────────────
+  serviceWeight               Int     @default(20)
+  serviceGoal                 String?
+  serviceTarget               String?
+  serviceOutcome              String?
+  serviceFacultyComment       String?
+  serviceChairComment         String?
+  serviceChairNarrative       String?
+  serviceRating               PerformanceRating?
+
+  // ── Collegiality (competency, no weight) ──────────────────────────────
+  collegialityRating          PerformanceRating?
+  collegialityChairComment    String?
+  collegialityFacultyComment  String?
+
+  // ── Development Opportunities ─────────────────────────────────────────
+  developmentComments         String[]
+
+  // ── Upcoming Period Goals ─────────────────────────────────────────────
+  nextTeachingGoal            String?
+  nextTeachingTarget          String?
+  nextScholarshipGoal         String?
+  nextScholarshipTarget       String?
+  nextServiceGoal             String?
+  nextServiceTarget           String?
+
+  // ── Overall (calculated) ──────────────────────────────────────────────
+  overallRating               PerformanceRating?
+  overallWeightedScore        Float?             // computed from three area scores
+
+  // ── AI-generated summary ──────────────────────────────────────────────
+  aiSummary                   String?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  faculty    FacultyProfile           @relation(fields: [facultyId], references: [id])
+  approvals  PerformanceReviewApproval[]
+
+  @@index([facultyId])
+  @@index([reviewYear])
+  @@index([status])
+}
+
+model PerformanceReviewApproval {
+  id         String   @id @default(cuid())
+  reviewId   String
+  activity   String   // e.g. "Chair Approval", "Dean Approval"
+  actorName  String
+  outcome    String   // e.g. "Approve", "Send back to Chair"
+  comments   String?
+  actedAt    DateTime @default(now())
+
+  review PerformanceReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+}
+
+// Add relation back to FacultyProfile
+// (done inline above via PerformanceReview.faculty)
