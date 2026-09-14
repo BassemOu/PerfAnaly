@@ -49,7 +49,7 @@ function redistribute(
 
   const others = ([0, 1, 2, 3] as const).filter((i) => i !== changedIdx);
   const remaining = 100 - clamped;
-  const othersSum = others.reduce((s, i) => s + w[i], 0);
+  const othersSum = others.reduce<number>((s, i) => s + w[i], 0);
 
   if (remaining <= 0) {
     others.forEach((i) => (next[i] = 0));

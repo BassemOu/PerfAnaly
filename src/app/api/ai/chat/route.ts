@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 
 export const runtime = "nodejs";
 
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const { messages, model = "llama3.2" } = body as {
@@ -10,7 +12,7 @@ export async function POST(req: NextRequest) {
   };
 
   try {
-    const ollamaRes = await fetch("http://localhost:11434/api/chat", {
+    const ollamaRes = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ model, messages, stream: true }),
@@ -31,7 +33,7 @@ export async function POST(req: NextRequest) {
     });
   } catch {
     return Response.json(
-      { error: "Cannot connect to Ollama. Make sure it is running on localhost:11434 (`ollama serve`)." },
+      { error: `Cannot connect to Ollama at ${OLLAMA_BASE_URL}. Make sure it is running (\`ollama serve\`).` },
       { status: 503 }
     );
   }

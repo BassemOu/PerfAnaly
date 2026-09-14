@@ -52,7 +52,7 @@ async function getDashboardData(userId: string, role: string, deptId?: string) {
   const deptWhere = deptId ? { faculty: { departmentId: deptId } } : {};
   try {
     const [totalFaculty, activeReviews, completedReviews, allReviews, workflowReviews] = await Promise.all([
-      isAdmin ? prisma.facultyProfile.count(deptId ? { where: { departmentId: deptId } } : {}) : 0,
+      isAdmin ? prisma.facultyProfile.count({ where: deptId ? { departmentId: deptId } : {} }) : 0,
       prisma.performanceReview.count({ where: { ...deptWhere, status: { notIn: ["COMPLETED", "HR_COMPLETED", "DRAFT"] } } }),
       prisma.performanceReview.count({ where: { ...deptWhere, status: { in: ["COMPLETED", "HR_COMPLETED"] } } }),
       prisma.performanceReview.findMany({

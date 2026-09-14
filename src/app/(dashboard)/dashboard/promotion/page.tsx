@@ -271,7 +271,9 @@ export default async function PromotionPage() {
                           <div className="flex items-center gap-1">
                             <RatingBadge rating={collegiality} />
                             {collegiality_flagged && (
-                              <AlertTriangle className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" title="Collegiality concern" />
+                              <span title="Collegiality concern" className="flex">
+                                <AlertTriangle className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" aria-label="Collegiality concern" />
+                              </span>
                             )}
                           </div>
                         </td>
