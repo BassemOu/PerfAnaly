@@ -18,7 +18,7 @@ async function listCloudModels(): Promise<string[]> {
     const data = (await res.json()) as { data?: Array<{ id: string }> };
     const ids = (data.data ?? [])
       .map((m) => m.id)
-      .filter((id) => !/embed|whisper|tts|dall-e|guard/i.test(id));
+      .filter((id) => !/embed|whisper|tts|dall-e|guard|orpheus|speech/i.test(id));
     if (ids.length === 0) return fallback;
 
     // Keep the configured default first so it stays pre-selected in the UI.
