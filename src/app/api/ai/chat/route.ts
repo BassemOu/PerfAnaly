@@ -84,11 +84,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Ollama model names (e.g. "llama3.2:3b") are meaningless to OpenAI.
-  const openaiModel =
-    model.startsWith("gpt-") || model.startsWith("o1") || model.startsWith("o3")
-      ? model
-      : AI_MODEL;
+  // Ollama tags ("llama3.2:3b") are meaningless to a cloud provider; anything else passes through.
+  const cloudModel = model.includes(":") ? AI_MODEL : model;
 
-  return new Response(streamFromOpenAI(messages, openaiModel), { headers: streamHeaders });
+  return new Response(streamFromOpenAI(messages, cloudModel), { headers: streamHeaders });
 }

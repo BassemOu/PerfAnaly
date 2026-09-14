@@ -4,11 +4,16 @@ const globalForOpenAI = globalThis as unknown as {
   openai: OpenAI | undefined;
 };
 
+/** Any OpenAI-compatible endpoint (Groq, OpenRouter, Together, Gemini, local vLLM…). */
+export const AI_BASE_URL =
+  process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
+
 export const openai =
   globalForOpenAI.openai ??
   new OpenAI({
     // Placeholder keeps construction from throwing at import when unset; callers guard on the real env var.
     apiKey: process.env.OPENAI_API_KEY ?? "not-configured",
+    baseURL: AI_BASE_URL,
   });
 
 if (process.env.NODE_ENV !== "production") globalForOpenAI.openai = openai;
