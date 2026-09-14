@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Users, Search, Plus, Filter } from "lucide-react";
+import { Users, Search, Filter } from "lucide-react";
 import { RANK_LABELS } from "@/lib/constants";
 import { getInitials } from "@/lib/utils";
 import Link from "next/link";
@@ -75,12 +75,6 @@ export default async function FacultyListPage({
           <h1 className="text-2xl font-bold text-gray-900">Faculty</h1>
           <p className="text-gray-500">{total} faculty members</p>
         </div>
-        <Button className="bg-indigo-600 hover:bg-indigo-700" asChild>
-          <Link href="/dashboard/admin/users/new">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Faculty
-          </Link>
-        </Button>
       </div>
 
       {/* Search */}

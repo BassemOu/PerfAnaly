@@ -6,13 +6,8 @@ import {
   LayoutDashboard,
   Users,
   ClipboardList,
-  FileText,
   TrendingUp,
-  GitBranch,
-  BarChart3,
-  Settings,
   Bot,
-  GraduationCap,
   Microscope,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,12 +33,6 @@ const navItems: NavItem[] = [
     roles: ["DEPARTMENT_CHAIR", "DIVISION_DEAN", "HR_ADMIN", "REVIEW_COMMITTEE", "PROVOST"],
   },
   {
-    label: "My Profile",
-    href: "/dashboard/profile",
-    icon: GraduationCap,
-    roles: ["FACULTY"],
-  },
-  {
     label: "Performance Reviews",
     href: "/dashboard/appraisal",
     icon: ClipboardList,
@@ -62,18 +51,6 @@ const navItems: NavItem[] = [
     label: "AI Assistant",
     href: "/dashboard/ai-assistant",
     icon: Bot,
-  },
-  {
-    label: "Reports",
-    href: "/dashboard/reports",
-    icon: BarChart3,
-    roles: ["DEPARTMENT_CHAIR", "DIVISION_DEAN", "HR_ADMIN", "REVIEW_COMMITTEE", "PROVOST"],
-  },
-  {
-    label: "Admin",
-    href: "/dashboard/admin",
-    icon: Settings,
-    roles: ["HR_ADMIN", "PROVOST"],
   },
 ];
 
