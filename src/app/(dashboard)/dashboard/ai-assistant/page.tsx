@@ -110,12 +110,12 @@ export default async function AIAssistantPage() {
           <div>
             <h1 className="text-base font-bold text-white">Faculty Performance AI</h1>
             <p className="text-xs text-slate-500">
-              Ollama-powered analysis · {faculty.length} reviewed faculty in context
+              AI-powered analysis · {faculty.length} reviewed faculty in context
             </p>
           </div>
         </div>
         <div className="text-xs bg-slate-800 border border-slate-700 text-slate-400 px-3 py-1.5 rounded-lg">
-          Local LLM · No data leaves your server
+          Local LLM when available · cloud fallback
         </div>
       </div>
 

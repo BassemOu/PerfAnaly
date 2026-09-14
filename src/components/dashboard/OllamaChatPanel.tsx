@@ -158,28 +158,32 @@ export function OllamaChatPanel({ faculty }: { faculty: FacultyAIContext[] }) {
   const [models, setModels] = useState<string[]>([]);
   const [model, setModel] = useState("llama3.2:3b");
   const [ollamaOk, setOllamaOk] = useState<boolean | null>(null);
+  const [provider, setProvider] = useState<"ollama" | "openai" | null>(null);
   const [warming, setWarming] = useState(false);
   const [showModelDrop, setShowModelDrop] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load available Ollama models, then pre-warm the selected model
+  // Load available models from whichever provider is reachable, then pre-warm
   useEffect(() => {
     fetch("/api/ai/models")
       .then((r) => r.json())
-      .then((d: { models: string[] }) => {
+      .then((d: { models: string[]; provider: "ollama" | "openai" | null }) => {
+        setProvider(d.provider);
         if (d.models.length > 0) {
-          const best = pickBestModel(d.models);
+          const best = d.provider === "openai" ? d.models[0] : pickBestModel(d.models);
           setModels(d.models);
           setModel(best);
           setOllamaOk(true);
-          // Fire-and-forget keep-alive ping to load model weights into RAM
-          setWarming(true);
-          fetch("/api/ai/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ model: best, messages: [{ role: "user", content: "hi" }], stream: false }),
-          }).finally(() => setWarming(false));
+          // Only local models benefit from pre-loading weights into RAM.
+          if (d.provider === "ollama") {
+            setWarming(true);
+            fetch("/api/ai/chat", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ model: best, messages: [{ role: "user", content: "hi" }], stream: false }),
+            }).finally(() => setWarming(false));
+          }
         } else {
           setOllamaOk(false);
         }
@@ -232,7 +236,7 @@ export function OllamaChatPanel({ faculty }: { faculty: FacultyAIContext[] }) {
         const err = await res.json() as { error?: string };
         setMessages((prev) => [
           ...prev.slice(0, -1),
-          { role: "assistant", content: `⚠️ ${err.error ?? "Error connecting to Ollama."}` },
+          { role: "assistant", content: `⚠️ ${err.error ?? "Error connecting to the AI service."}` },
         ]);
         setStreaming(false);
         return;
@@ -273,7 +277,7 @@ export function OllamaChatPanel({ faculty }: { faculty: FacultyAIContext[] }) {
     } catch {
       setMessages((prev) => [
         ...prev.slice(0, -1),
-        { role: "assistant", content: "⚠️ Cannot reach Ollama. Run `ollama serve` and make sure a model is pulled." },
+        { role: "assistant", content: "⚠️ Cannot reach the AI service. Check that Ollama is running or that OPENAI_API_KEY is set." },
       ]);
     } finally {
       setStreaming(false);
@@ -354,7 +358,7 @@ export function OllamaChatPanel({ faculty }: { faculty: FacultyAIContext[] }) {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Ollama status */}
+            {/* AI provider status */}
             <span className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${
               warming          ? "bg-amber-900/40 text-amber-400 border border-amber-800"
               : ollamaOk === true  ? "bg-green-900/40 text-green-400 border border-green-800"
@@ -362,7 +366,11 @@ export function OllamaChatPanel({ faculty }: { faculty: FacultyAIContext[] }) {
               : "bg-slate-800 text-slate-500"
             }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${warming ? "bg-amber-400 animate-pulse" : ollamaOk === true ? "bg-green-400" : ollamaOk === false ? "bg-red-400" : "bg-slate-500"}`} />
-              {warming ? "Warming up…" : ollamaOk === true ? "Ollama connected" : ollamaOk === false ? "Ollama offline" : "Checking…"}
+              {warming
+                ? "Warming up…"
+                : ollamaOk === true
+                  ? provider === "openai" ? "OpenAI connected" : "Ollama connected"
+                  : ollamaOk === false ? "AI offline" : "Checking…"}
             </span>
 
             {/* Model picker */}
@@ -413,7 +421,9 @@ export function OllamaChatPanel({ faculty }: { faculty: FacultyAIContext[] }) {
                       })}
                   </div>
                   <div className="px-3 py-2 border-t border-slate-700 text-[10px] text-slate-600 flex-shrink-0 rounded-b-lg">
-                    Pull faster: <code className="text-slate-500">ollama pull llama3.2:3b</code>
+                    {provider === "openai"
+                      ? "Cloud models · billed to your OpenAI account"
+                      : <>Pull faster: <code className="text-slate-500">ollama pull llama3.2:3b</code></>}
                   </div>
                 </div>
               )}
@@ -465,8 +475,8 @@ export function OllamaChatPanel({ faculty }: { faculty: FacultyAIContext[] }) {
                 </p>
                 {ollamaOk === false && (
                   <div className="mt-3 bg-red-950/40 border border-red-900 rounded-lg px-4 py-3 text-xs text-red-300 max-w-sm mx-auto">
-                    <p className="font-semibold mb-1">Ollama not detected</p>
-                    <p>Run <code className="bg-red-900/40 px-1 rounded">ollama serve</code> and pull a model with <code className="bg-red-900/40 px-1 rounded">ollama pull llama3.2</code></p>
+                    <p className="font-semibold mb-1">No AI provider available</p>
+                    <p>Start a local model with <code className="bg-red-900/40 px-1 rounded">ollama serve</code>, or set an <code className="bg-red-900/40 px-1 rounded">OPENAI_API_KEY</code>.</p>
                   </div>
                 )}
               </div>
@@ -534,7 +544,7 @@ export function OllamaChatPanel({ faculty }: { faculty: FacultyAIContext[] }) {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
               }}
-              placeholder={ollamaOk === false ? "Ollama offline — start with `ollama serve`" : "Ask about faculty performance…"}
+              placeholder={ollamaOk === false ? "AI offline — no provider configured" : "Ask about faculty performance…"}
               rows={1}
               disabled={streaming || ollamaOk === false}
               className="flex-1 resize-none bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-700 disabled:opacity-50 min-h-[42px] max-h-[120px]"
@@ -549,7 +559,9 @@ export function OllamaChatPanel({ faculty }: { faculty: FacultyAIContext[] }) {
             </button>
           </div>
           <p className="text-[10px] text-slate-700 mt-2 text-center">
-            Powered by Ollama · Running locally · Context: {faculty.length} faculty
+            {provider === "openai"
+              ? "Powered by OpenAI · Faculty data is sent to OpenAI"
+              : "Powered by Ollama · Running locally"} · Context: {faculty.length} faculty
           </p>
         </div>
       </div>
